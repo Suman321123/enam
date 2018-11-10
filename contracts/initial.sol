@@ -1,13 +1,10 @@
 pragma solidity ^0.4.4;
-pragma experimental ABIEncoderV2;
 
 contract initial {
 
 
    /*==================================================STRINGS===========================================================*/
-    //uname is the username of farmer
-    //upvotes is the upvotes given to the farmer
-    //password is the password for the farmer to login in the system
+    
     struct Member {
         string uname;
         string checkGhash;
@@ -27,8 +24,28 @@ contract initial {
         string ProductQuality;
         int ProductBagSize;
         int ProductNoBags;
-        bool status;
+        int status;
     }
+
+    struct ArrayLotNumber{
+        int[] FarmerLOTArray;
+    }
+    
+    //Data variables for bidding process
+    // static
+    address public owner;
+    uint public bidIncrement;
+    uint public startBlock;
+    uint public endBlock;
+    string public ipfsHash;
+
+    // state
+    bool public canceled;
+    uint public highestBindingBid;
+    address public highestBidder;
+    bool ownerHasWithdrawn;
+
+     
   
     /*===================================================ARRAYS===========================================================*/
     //List of all farmers
@@ -45,6 +62,10 @@ contract initial {
     mapping(address => bool) public GAllCheckHash;
     //Mapping for lot number to data of entry gate
     mapping(int => EntryGate) private FarmerEntryGate;
+    //Mapping for OTS to FarmerProduct's Lot Number so to store the Farmer's product in his database
+    mapping(string => ArrayLotNumber) FarmerLOTNo;
+    //Mapping for bidder to total bidding amount he/she bid
+    mapping(address => uint256) public fundsByBidder;
    
 
     /*====================================================EVENTS==============================================================*/
@@ -72,6 +93,7 @@ contract initial {
         _;
     }
 
+    //For checking if member is already register or not
     modifier checkReg() {
         require(!MemberAddress[msg.sender].status);
         _;
@@ -108,7 +130,7 @@ contract initial {
         return true;
     }
 
-    function hasGhash() public view returns(string) {
+    function getGhash() public view returns(string) {
         if(GAllCheckHash[msg.sender] == true)
             return AllCheckHash[msg.sender];
         return "null";  
@@ -142,12 +164,16 @@ contract initial {
         return (1, "null");
         
     }
+
+    //--------FUNCTIONS FOR ENTRY GATE------//
     
     //Function for adding data of EntryGate
     function AddEntryGate(int lotnumber, string fname, string fots, string fmandi, string fstate, string pname, string pquality, int pbs, int pnobag) public payable returns(bool) {
 
         LotNumber.push(lotnumber);
 
+        FarmerLOTNo[fots].FarmerLOTArray.push(lotnumber);
+      
         FarmerEntryGate[lotnumber].FarmerName = fname;
         FarmerEntryGate[lotnumber].FarmerOTS = fots;
         FarmerEntryGate[lotnumber].FarmerMandi = fmandi;
@@ -156,28 +182,54 @@ contract initial {
         FarmerEntryGate[lotnumber].ProductQuality = pquality;
         FarmerEntryGate[lotnumber].ProductBagSize = pbs;
         FarmerEntryGate[lotnumber].ProductNoBags = pnobag;
-        FarmerEntryGate[lotnumber].status = false;
+        FarmerEntryGate[lotnumber].status = 0;
         emit DataIntoEntryGate(fots, lotnumber);
         return true;
     }
 
-    function CheckStatus() public returns(string, string, int) {
+   //Function for  geting total count of LOTNUMBER of perticular farmer
+    function GetLotCount(string fots) public returns(uint) {
+        return FarmerLOTNo[fots].FarmerLOTArray.length;
+    }
+
+    //Function for changing status after farmer confirmed
+    function ChangeStatus(int lotnumber) public returns(bool)
+    {
+        FarmerEntryGate[lotnumber].status = 1;  
+        return true;
+    }
+
+    //Function for changing status after farmer rejected the product
+    function DenyProduct(int lotnumber) public returns(bool)
+    {
+        FarmerEntryGate[lotnumber].status = 5;  
+        return true;
+    }
+    
+    //Function for returning product details to Farmer
+    function FarmerGetProduct(uint index) public returns(int, string, string, string, string ,int, int, int) {
 
         string ots1 = AllCheckHash[msg.sender];
-        
-        for(uint i=0;i<LotNumber.length;i++)
+
+        for(uint i=index;i<FarmerLOTNo[ots1].FarmerLOTArray.length;i++)
         {
-            string ots2 = FarmerEntryGate[LotNumber[i]].FarmerOTS;
-            if(stringsEqual(ots1,ots2) && !FarmerEntryGate[LotNumber[i]].status)
-            {
-                FarmerEntryGate[LotNumber[i]].status = true;   
-                return (FarmerEntryGate[LotNumber[i]].FarmerMandi, FarmerEntryGate[LotNumber[i]].ProductName,  FarmerEntryGate[LotNumber[i]].ProductNoBags);
-            }
+            return (FarmerEntryGate[FarmerLOTNo[ots1].FarmerLOTArray[i]].status, FarmerEntryGate[FarmerLOTNo[ots1].FarmerLOTArray[i]].FarmerMandi, FarmerEntryGate[FarmerLOTNo[ots1].FarmerLOTArray[i]].FarmerState, FarmerEntryGate[FarmerLOTNo[ots1].FarmerLOTArray[i]].ProductName,  FarmerEntryGate[FarmerLOTNo[ots1].FarmerLOTArray[i]].ProductQuality, FarmerEntryGate[FarmerLOTNo[ots1].FarmerLOTArray[i]].ProductNoBags, FarmerEntryGate[FarmerLOTNo[ots1].FarmerLOTArray[i]].ProductBagSize, FarmerLOTNo[ots1].FarmerLOTArray[i]);
         }
         
-        return ("null","null",0);  
+        return (0,"null","null","null","null",0,0,0);  
+    }
+    
+    //-----ENDING-----//
+
+
+    //--------------BIDING PROCESS--------------//
+    
+        
+   
+    //-------ENDING----//
+
 
     
+    
 
-    }
 }

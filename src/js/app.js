@@ -8,6 +8,10 @@ if(lastname)
     {
       $("#navbarUl").append("<li class=\"nav-item\"><a href=\"EntryGate.html\" class=\"nav-link\">Entry Gate</a></li>")
     }
+    else if(actor == "Farmer")
+    {
+      $("#navbarUl").append("<li class=\"nav-item\"><a href=\"productstatus.html\" class=\"nav-link\">Product Status</a></li>")
+    }
 }
 
 
@@ -118,10 +122,7 @@ App = {
         $('#formFooter1').html('Forget Your OTS ?<br><button type="button" class="btn btn-danger" data-toggle="modal" data-target="#myModal">Click Here</button>')
         
       }
-      return MemberInstance.CheckStatus.call()   
-    }).then( (result) => {
-      console.log(result[2].toNumber())
-  })
+    })
   },
 
   generateHash: function() {
